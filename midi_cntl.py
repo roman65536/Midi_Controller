@@ -28,7 +28,11 @@ import adafruit_ili9341
 
 
 
-
+def check_range(val1,val2,range):
+	diff=val1-val2
+	if(abs(diff)>range):
+		return True
+	return False
 
 
 
@@ -95,7 +99,7 @@ splash.append(text_area)
 #circle = Circle(10, 10, circle_radius, fill=0x00FF00, outline=0xFF00FF)
 #splash.append(circle)
 
-time.sleep(10.0)
+time.sleep(5.0)
 
 splash.remove(text_area)
 splash.remove(bg_sprite)
@@ -175,11 +179,13 @@ while True:
 		mux1.value = x & 2
 		mux2.value = x & 4
 		mux3.value = x & 8
-		
-		
 
-		# Read the analog value
-		pot_value = potentiometer1.value
+		#Averiging A/D values to limit ad fluctuations 
+		pot_value=0
+		for t in range(0,16):
+			# Read the analog value
+			pot_value += potentiometer1.value
+		pot_value /= 16
 
 		# Scale to midi values (0-127)
 		midi_value1 = int(pot_value / 512)
@@ -189,8 +195,11 @@ while True:
 		# text += "CH {0} Val {1} prog {2} {3}\n".format(1+x,midi_value1, prog_sw.value, ~prog_sw.value)
 		
 
-		if midi_value1 != midi_old[x] and prog != 1:
-		# Sende das MIDI-Event (Control Change 1)
+		#if midi_value1 != midi_old[x] and prog != 1:
+		
+		# Send Midi event only if new value is higher compare to old value
+		if check_range(midi_value1,midi_old[x],(.5)) and prog != 1:
+		# Send the MIDI-Event for particular potentiometer
 			midi.send([ControlChange(1+x, midi_value1)])
 #			print("test1 {:d} {:d} {:d} {:d} ".format(x,midi_old[x], prog_sw.value, prog_sw.value ^ 1))
 
